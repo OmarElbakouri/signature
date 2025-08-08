@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historique - Service de Signature Électronique</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-file-signature me-2"></i>
+                Signature Électronique
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>Accueil</a>
+                <a class="nav-link" href="/upload"><i class="fas fa-upload me-1"></i>Upload</a>
+                <a class="nav-link" href="/documents"><i class="fas fa-file-alt me-1"></i>Documents</a>
+                <a class="nav-link active" href="/history"><i class="fas fa-history me-1"></i>Historique</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-history me-2"></i>Historique des Signatures</h4>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(signedDocuments)}" class="text-center py-5">
+                            <i class="fas fa-signature fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucune signature trouvée</h5>
+                            <p class="text-muted">Les documents signés apparaîtront ici</p>
+                            <a href="/upload" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>Commencer à signer
+                            </a>
+                        </div>
+                        
+                        <div th:unless="${#lists.isEmpty(signedDocuments)}">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Rechercher par nom de document ou signataire...">
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-select" id="sortSelect">
+                                        <option value="date-desc">Plus récent d'abord</option>
+                                        <option value="date-asc">Plus ancien d'abord</option>
+                                        <option value="name-asc">Nom A-Z</option>
+                                        <option value="name-desc">Nom Z-A</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Document</th>
+                                            <th>Signataire</th>
+                                            <th>Date de Signature</th>
+                                            <th>Certificat</th>
+                                            <th>Algorithme</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyTableBody">
+                                        <tr th:each="doc : ${signedDocuments}" class="history-row">
+                                            <td>
+                                                <i class="fas fa-file-pdf text-danger me-2"></i>
+                                                <span class="document-name" th:text="${doc.originalName}">document.pdf</span>
+                                                <br>
+                                                <small class="text-muted" th:text="${#numbers.formatDecimal(doc.fileSize / 1024, 0, 0)} + ' KB'">100 KB</small>
+                                            </td>
+                                            <td>
+                                                <span class="signer-name" th:text="${doc.signerName}">John Doe</span>
+                                            </td>
+                                            <td th:text="${#temporals.format(doc.signedAt, 'dd/MM/yyyy HH:mm:ss')}">01/01/2024 10:00:00</td>
+                                            <td>
+                                                <small class="text-muted" th:text="${doc.certificateSubject}">CN=Certificate</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info" th:text="${doc.signatureAlgorithm}">SHA256withRSA</span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button class="btn btn-outline-primary" 
+                                                            th:onclick="'downloadDocument(' + ${doc.id} + ', false)'">
+                                                        <i class="fas fa-download"></i> Original
+                                                    </button>
+                                                    <button class="btn btn-outline-success"
+                                                            th:onclick="'downloadDocument(' + ${doc.id} + ', true)'">
+                                                        <i class="fas fa-signature"></i> Signé
+                                                    </button>
+                                                    <button class="btn btn-outline-info"
+                                                            th:onclick="'showSignatureDetails(' + ${doc.id} + ')'">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Détails de la Signature</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-file-alt me-2"></i>Document</h6>
+                            <p id="detailDocumentName" class="mb-3">-</p>
+                            
+                            <h6><i class="fas fa-user me-2"></i>Signataire</h6>
+                            <p id="detailSignerName" class="mb-3">-</p>
+                            
+                            <h6><i class="fas fa-calendar me-2"></i>Date de Signature</h6>
+                            <p id="detailSignedAt" class="mb-3">-</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-certificate me-2"></i>Certificat</h6>
+                            <p id="detailCertificate" class="mb-3 small">-</p>
+                            
+                            <h6><i class="fas fa-shield-alt me-2"></i>Algorithme</h6>
+                            <p id="detailAlgorithm" class="mb-3">-</p>
+                            
+                            <h6><i class="fas fa-check-circle me-2"></i>Status</h6>
+                            <span class="badge bg-success">Signature Valide</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" id="downloadSignedFromModal">
+                        <i class="fas fa-download me-2"></i>Télécharger Document Signé
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentDetailDocumentId = null;
+        const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+
+        function downloadDocument(docId, signed) {
+            const url = `/api/documents/${docId}/download?signed=${signed}`;
+            window.open(url, '_blank');
+        }
+
+        function showSignatureDetails(docId) {
+            fetch(`/api/documents/${docId}`)
+                .then(response => response.json())
+                .then(doc => {
+                    currentDetailDocumentId = docId;
+                    document.getElementById('detailDocumentName').textContent = doc.originalName;
+                    document.getElementById('detailSignerName').textContent = doc.signerName;
+                    document.getElementById('detailSignedAt').textContent = new Date(doc.signedAt).toLocaleString('fr-FR');
+                    document.getElementById('detailCertificate').textContent = doc.certificateSubject;
+                    document.getElementById('detailAlgorithm').textContent = doc.signatureAlgorithm;
+                    detailsModal.show();
+                })
+                .catch(error => {
+                    alert('Erreur lors du chargement des détails: ' + error.message);
+                });
+        }
+
+        document.getElementById('downloadSignedFromModal').addEventListener('click', function() {
+            if (currentDetailDocumentId) {
+                downloadDocument(currentDetailDocumentId, true);
+            }
+        });
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.history-row');
+            
+            rows.forEach(row => {
+                const documentName = row.querySelector('.document-name').textContent.toLowerCase();
+                const signerName = row.querySelector('.signer-name').textContent.toLowerCase();
+                
+                if (documentName.includes(searchTerm) || signerName.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Sort functionality
+        document.getElementById('sortSelect').addEventListener('change', function() {
+            const sortBy = this.value;
+            const tbody = document.getElementById('historyTableBody');
+            const rows = Array.from(tbody.querySelectorAll('.history-row'));
+            
+            rows.sort((a, b) => {
+                switch(sortBy) {
+                    case 'date-desc':
+                        return new Date(b.cells[2].textContent) - new Date(a.cells[2].textContent);
+                    case 'date-asc':
+                        return new Date(a.cells[2].textContent) - new Date(b.cells[2].textContent);
+                    case 'name-asc':
+                        return a.querySelector('.document-name').textContent.localeCompare(b.querySelector('.document-name').textContent);
+                    case 'name-desc':
+                        return b.querySelector('.document-name').textContent.localeCompare(a.querySelector('.document-name').textContent);
+                    default:
+                        return 0;
+                }
+            });
+            
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: signature-postgres
+    environment:
+      POSTGRES_DB: signature_db
+      POSTGRES_USER: signature_user
+      POSTGRES_PASSWORD: signature_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - signature-network
+
+  signature-service:
+    build: .
+    container_name: signature-service
+    ports:
+      - "8443:8443"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/signature_db
+      - SPRING_DATASOURCE_USERNAME=signature_user
+      - SPRING_DATASOURCE_PASSWORD=signature_pass
+    volumes:
+      - ./documents:/app/documents
+      - ./certificates:/app/certificates
+    depends_on:
+      - postgres
+    networks:
+      - signature-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  signature-network:
+    driver: bridge
