@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - Electronic Signature Service</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .register-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .register-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .register-body {
+            padding: 2rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            width: 100%;
+        }
+        
+        .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-control.is-invalid {
+            border-color: #ef4444;
+        }
+        
+        .invalid-feedback {
+            color: #ef4444;
+            font-size: 0.875rem;
+        }
+        
+        .alert {
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <i class="bi bi-person-plus" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+            <h1>Inscription</h1>
+            <p>Créez votre compte</p>
+        </div>
+        
+        <div class="register-body">
+            <!-- Messages d'erreur -->
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-circle me-2"></i>
+                <span th:text="${errorMessage}"></span>
+            </div>
+            
+            <!-- Formulaire d'inscription -->
+            <form method="post" action="/register" th:object="${user}">
+                <div class="row">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" th:field="*{firstName}" 
+                               th:class="${#fields.hasErrors('firstName')} ? 'form-control is-invalid' : 'form-control'"
+                               placeholder="Prénom" required>
+                        <div th:if="${#fields.hasErrors('firstName')}" class="invalid-feedback">
+                            <span th:errors="*{firstName}"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" th:field="*{lastName}"
+                               th:class="${#fields.hasErrors('lastName')} ? 'form-control is-invalid' : 'form-control'"
+                               placeholder="Nom" required>
+                        <div th:if="${#fields.hasErrors('lastName')}" class="invalid-feedback">
+                            <span th:errors="*{lastName}"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <input type="text" class="form-control" th:field="*{username}"
+                       th:class="${#fields.hasErrors('username')} ? 'form-control is-invalid' : 'form-control'"
+                       placeholder="Nom d'utilisateur" required>
+                <div th:if="${#fields.hasErrors('username')}" class="invalid-feedback">
+                    <span th:errors="*{username}"></span>
+                </div>
+                
+                <input type="email" class="form-control" th:field="*{email}"
+                       th:class="${#fields.hasErrors('email')} ? 'form-control is-invalid' : 'form-control'"
+                       placeholder="Adresse email" required>
+                <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback">
+                    <span th:errors="*{email}"></span>
+                </div>
+                
+                <input type="password" class="form-control" th:field="*{password}"
+                       th:class="${#fields.hasErrors('password')} ? 'form-control is-invalid' : 'form-control'"
+                       placeholder="Mot de passe" required minlength="6">
+                <div th:if="${#fields.hasErrors('password')}" class="invalid-feedback">
+                    <span th:errors="*{password}"></span>
+                </div>
+                
+                <input type="password" class="form-control" name="confirmPassword" 
+                       placeholder="Confirmer le mot de passe" required>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="terms" required>
+                    <label class="form-check-label" for="terms">
+                        J'accepte les conditions d'utilisation
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-person-plus me-2"></i>Créer mon compte
+                </button>
+                
+                <div class="text-center mt-3">
+                    <a href="/login" class="text-decoration-none">J'ai déjà un compte</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

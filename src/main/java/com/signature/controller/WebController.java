@@ -13,13 +13,7 @@ public class WebController {
     @Autowired
     private DocumentService documentService;
 
-    @GetMapping("/")
-    public String index(Model model) {
-        model.addAttribute("totalDocuments", documentService.getTotalDocuments());
-        model.addAttribute("signedDocuments", documentService.getSignedDocumentsCount());
-        model.addAttribute("unsignedDocuments", documentService.getUnsignedDocumentsCount());
-        return "index";
-    }
+    // Root mapping removed - handled by AuthController for authentication flow
 
     @GetMapping("/upload")
     public String uploadPage() {

@@ -1,6 +1,7 @@
 package com.signature.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 
 @Entity
@@ -46,6 +47,11 @@ public class Document {
     
     @Column
     private String signatureAlgorithm;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore // Pour éviter les cycles de sérialisation JSON
+    private User user;
 
     // Constructors
     public Document() {
@@ -97,7 +103,10 @@ public class Document {
 
     public String getCertificateSubject() { return certificateSubject; }
     public void setCertificateSubject(String certificateSubject) { this.certificateSubject = certificateSubject; }
-
+    
     public String getSignatureAlgorithm() { return signatureAlgorithm; }
     public void setSignatureAlgorithm(String signatureAlgorithm) { this.signatureAlgorithm = signatureAlgorithm; }
+    
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 }

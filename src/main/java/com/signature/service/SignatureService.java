@@ -1,6 +1,7 @@
 package com.signature.service;
 
 import com.signature.entity.Document;
+import com.signature.entity.User;
 import com.signature.repository.DocumentRepository;
 import org.apache.pdfbox.pdmodel.PDDocument;
 // Visual signature imports removed temporarily
@@ -23,26 +24,30 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-// import java.awt.Color; // Unused
+import java.awt.Color;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
-// import java.security.Security; // Unused
-// import java.security.cert.Certificate; // Unused
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
-// import java.text.SimpleDateFormat; // Unused
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Calendar;
-// import java.util.Date; // Unused
 import java.util.UUID;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Service
 public class SignatureService {
@@ -64,6 +69,17 @@ public class SignatureService {
 
     private PrivateKey privateKey;
     private X509Certificate certificate;
+    
+    /**
+     * Récupère l'utilisateur actuellement connecté
+     */
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            return (User) auth.getPrincipal();
+        }
+        return null;
+    }
 
     public Document uploadDocument(MultipartFile file) throws Exception {
         // Create storage directory if it doesn't exist
@@ -87,6 +103,12 @@ public class SignatureService {
             file.getSize(),
             file.getContentType()
         );
+        
+        // Associate document with current user
+        User currentUser = getCurrentUser();
+        if (currentUser != null) {
+            document.setUser(currentUser);
+        }
 
         return documentRepository.save(document);
     }
@@ -140,9 +162,9 @@ public class SignatureService {
             SignatureOptions signatureOptions = new SignatureOptions();
             signatureOptions.setPreferredSignatureSize(SignatureOptions.DEFAULT_SIGNATURE_SIZE * 2);
             
-            // Add visual signature to the first page (temporarily disabled for compilation)
-            System.out.println("Visual signature temporarily disabled - focusing on digital signature");
-            // addVisualSignature(doc, signerName);
+            // Add visual signature to the first page
+            System.out.println("Adding visual signature to document...");
+            addVisualSignature(doc, signerName);
 
             System.out.println("Adding digital signature to document...");
             doc.addSignature(signature, new SignatureInterface() {
@@ -251,12 +273,83 @@ public class SignatureService {
         }
     }
     
-    // Visual signature method temporarily removed due to PDFBox 3.x font API compatibility issues
-    // TODO: Re-implement visual signature with correct PDFBox 3.x font API
-    /*
+    /**
+     * Adds a visual signature to the first page of the PDF document
+     * Compatible with PDFBox 3.x API
+     */
     private void addVisualSignature(PDDocument document, String signerName) throws Exception {
-        // Implementation will be added once PDFBox font API issues are resolved
-        System.out.println("Visual signature feature temporarily disabled");
+        try {
+            // Get the first page
+            PDPage firstPage = document.getPage(0);
+            
+            // Create a content stream for drawing
+            PDPageContentStream contentStream = new PDPageContentStream(document, firstPage, 
+                PDPageContentStream.AppendMode.APPEND, true, true);
+            
+            // Load a standard font (PDFBox 3.x way)
+            PDFont font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            PDFont boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+            
+            // Define signature box dimensions and position
+            float boxWidth = 200;
+            float boxHeight = 80;
+            float boxX = 50; // Left margin
+            float boxY = 50; // Bottom margin
+            
+            // Draw signature box border
+            contentStream.setStrokingColor(Color.BLACK);
+            contentStream.setLineWidth(1);
+            contentStream.addRect(boxX, boxY, boxWidth, boxHeight);
+            contentStream.stroke();
+            
+            // Fill background with light gray
+            contentStream.setNonStrokingColor(new Color(245, 245, 245));
+            contentStream.addRect(boxX + 1, boxY + 1, boxWidth - 2, boxHeight - 2);
+            contentStream.fill();
+            
+            // Add signature text
+            contentStream.setNonStrokingColor(Color.BLACK);
+            
+            // Title
+            contentStream.beginText();
+            contentStream.setFont(boldFont, 10);
+            contentStream.newLineAtOffset(boxX + 10, boxY + boxHeight - 20);
+            contentStream.showText("Document signé numériquement");
+            contentStream.endText();
+            
+            // Signer name
+            contentStream.beginText();
+            contentStream.setFont(font, 9);
+            contentStream.newLineAtOffset(boxX + 10, boxY + boxHeight - 35);
+            contentStream.showText("Signataire: " + signerName);
+            contentStream.endText();
+            
+            // Date and time
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            String dateTime = now.format(formatter);
+            
+            contentStream.beginText();
+            contentStream.setFont(font, 8);
+            contentStream.newLineAtOffset(boxX + 10, boxY + boxHeight - 50);
+            contentStream.showText("Date: " + dateTime);
+            contentStream.endText();
+            
+            // Location/reason
+            contentStream.beginText();
+            contentStream.setFont(font, 8);
+            contentStream.newLineAtOffset(boxX + 10, boxY + boxHeight - 65);
+            contentStream.showText("Signature électronique certifiée");
+            contentStream.endText();
+            
+            // Close the content stream
+            contentStream.close();
+            
+            System.out.println("Visual signature added successfully for: " + signerName);
+            
+        } catch (Exception e) {
+            System.err.println("Error adding visual signature: " + e.getMessage());
+            throw new Exception("Failed to add visual signature: " + e.getMessage(), e);
+        }
     }
-    */
 }

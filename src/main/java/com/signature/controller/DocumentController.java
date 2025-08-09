@@ -116,11 +116,19 @@ public class DocumentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteDocument(@PathVariable Long id) {
         try {
-            documentService.deleteDocument(id);
-            return ResponseEntity.ok().build();
+            boolean deleted = documentService.deleteDocument(id);
+            if (deleted) {
+                return ResponseEntity.ok().build();
+            } else {
+                // Le document n'existe pas ou n'appartient pas à l'utilisateur actuel
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"error\": \"Access denied or document not found\"}");
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error deleting document: " + e.getMessage());
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"error\": \"Error deleting document: " + e.getMessage().replace("\"", "'") + "\"}");
         }
     }
 

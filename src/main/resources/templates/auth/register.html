@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{auth/layout :: layout(title='Inscription', subtitle='Créez votre compte', content=~{::content})}">
+<head>
+    <title>Inscription</title>
+</head>
+<body>
+    <div th:fragment="content">
+        <form method="post" action="/register" th:object="${user}" novalidate>
+            <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" th:field="*{firstName}" 
+                               th:class="${#fields.hasErrors('firstName')} ? 'form-control is-invalid' : 'form-control'"
+                               id="firstName" placeholder="Prénom" required>
+                        <label for="firstName">
+                            <i class="bi bi-person me-2"></i>Prénom
+                        </label>
+                        <div th:if="${#fields.hasErrors('firstName')}" class="invalid-feedback">
+                            <span th:errors="*{firstName}"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" th:field="*{lastName}"
+                               th:class="${#fields.hasErrors('lastName')} ? 'form-control is-invalid' : 'form-control'"
+                               id="lastName" placeholder="Nom" required>
+                        <label for="lastName">
+                            <i class="bi bi-person me-2"></i>Nom
+                        </label>
+                        <div th:if="${#fields.hasErrors('lastName')}" class="invalid-feedback">
+                            <span th:errors="*{lastName}"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-floating">
+                <input type="text" class="form-control" th:field="*{username}"
+                       th:class="${#fields.hasErrors('username')} ? 'form-control is-invalid' : 'form-control'"
+                       id="username" placeholder="Nom d'utilisateur" required>
+                <label for="username">
+                    <i class="bi bi-at me-2"></i>Nom d'utilisateur
+                </label>
+                <div th:if="${#fields.hasErrors('username')}" class="invalid-feedback">
+                    <span th:errors="*{username}"></span>
+                </div>
+            </div>
+            
+            <div class="form-floating">
+                <input type="email" class="form-control" th:field="*{email}"
+                       th:class="${#fields.hasErrors('email')} ? 'form-control is-invalid' : 'form-control'"
+                       id="email" placeholder="Email" required>
+                <label for="email">
+                    <i class="bi bi-envelope me-2"></i>Adresse email
+                </label>
+                <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback">
+                    <span th:errors="*{email}"></span>
+                </div>
+            </div>
+            
+            <div class="form-floating">
+                <input type="password" class="form-control" th:field="*{password}"
+                       th:class="${#fields.hasErrors('password')} ? 'form-control is-invalid' : 'form-control'"
+                       id="password" placeholder="Mot de passe" required minlength="6">
+                <label for="password">
+                    <i class="bi bi-lock me-2"></i>Mot de passe
+                </label>
+                <div th:if="${#fields.hasErrors('password')}" class="invalid-feedback">
+                    <span th:errors="*{password}"></span>
+                </div>
+            </div>
+            
+            <div class="form-floating">
+                <input type="password" class="form-control" name="confirmPassword" 
+                       id="confirmPassword" placeholder="Confirmer le mot de passe" required>
+                <label for="confirmPassword">
+                    <i class="bi bi-lock-fill me-2"></i>Confirmer le mot de passe
+                </label>
+            </div>
+            
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="terms" required>
+                <label class="form-check-label" for="terms">
+                    J'accepte les <a href="#" class="text-link">conditions d'utilisation</a> et la 
+                    <a href="#" class="text-link">politique de confidentialité</a>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-person-plus me-2"></i>Créer mon compte
+            </button>
+            
+            <div class="divider">
+                <span>ou</span>
+            </div>
+            
+            <a href="/login" class="btn btn-outline-primary">
+                <i class="bi bi-box-arrow-in-right me-2"></i>J'ai déjà un compte
+            </a>
+        </form>
+        
+        <script>
+            // Validation du mot de passe en temps réel
+            document.getElementById('confirmPassword').addEventListener('input', function() {
+                const password = document.getElementById('password').value;
+                const confirmPassword = this.value;
+                
+                if (password !== confirmPassword) {
+                    this.setCustomValidity('Les mots de passe ne correspondent pas');
+                    this.classList.add('is-invalid');
+                } else {
+                    this.setCustomValidity('');
+                    this.classList.remove('is-invalid');
+                }
+            });
+        </script>
+    </div>
+</body>
+</html>
